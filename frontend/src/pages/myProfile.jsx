@@ -3,6 +3,67 @@ import axios from 'axios';
 import { AppContext } from '../context/AppContext';
 import { toast } from 'react-toastify';
 
+// Dietary Restrictions Data
+const DIETARY_RESTRICTIONS = {
+  'Metabolic & Endocrine Conditions': [
+    { name: 'Type 1 Diabetes (Insulin-dependent)', icon: '💉' },
+    { name: 'Type 2 Diabetes (Non-insulin dependent)', icon: '🩺' },
+    { name: 'Gestational Diabetes', icon: '👶' },
+    { name: 'Prediabetes/Insulin Resistance', icon: '⚠️' },
+    { name: 'Hypoglycemia', icon: '📉' },
+    { name: 'Metabolic Syndrome', icon: '🔬' }
+  ],
+  'Cardiovascular Conditions': [
+    { name: 'Hypertension (High Blood Pressure)', icon: '❤️' },
+    { name: 'Coronary Heart Disease', icon: '💓' },
+    { name: 'High Cholesterol/Hyperlipidemia', icon: '📊' },
+    { name: 'Heart Failure', icon: '🚑' }
+  ],
+  'Gastrointestinal Disorders': [
+    { name: 'Celiac Disease (Autoimmune gluten intolerance)', icon: '🌾' },
+    { name: 'Crohn\'s Disease', icon: '🔬' },
+    { name: 'Ulcerative Colitis', icon: '🩺' },
+    { name: 'Irritable Bowel Syndrome (IBS)', icon: '🚽' },
+    { name: 'Gastroesophageal Reflux Disease (GERD)', icon: '🔥' }
+  ],
+  'Major Food Allergies': [
+    { name: 'Dairy/Milk Allergy', icon: '🥛' },
+    { name: 'Peanut Allergy', icon: '🥜' },
+    { name: 'Tree Nut Allergy (Almonds, Walnuts, Cashews, etc.)', icon: '🌰' },
+    { name: 'Shellfish Allergy (Crustaceans & Mollusks)', icon: '🦐' },
+    { name: 'Egg Allergy', icon: '🥚' },
+    { name: 'Fish Allergy', icon: '🐟' }
+  ],
+  'Food Intolerances': [
+    { name: 'Lactose Intolerance', icon: '🥛' },
+    { name: 'Gluten Sensitivity (Non-celiac)', icon: '🌾' },
+    { name: 'Fructose Intolerance', icon: '🍎' },
+    { name: 'FODMAP Intolerance', icon: '🥦' }
+  ],
+  'Religious & Cultural Dietary Laws': [
+    { name: 'Halal (Islamic dietary requirements)', icon: '🕌' },
+    { name: 'Kosher (Jewish dietary laws)', icon: '✡️' },
+    { name: 'Hindu Vegetarian', icon: '🕉️' },
+    { name: 'Jain Vegetarian (Strict vegan + no root vegetables)', icon: '🌱' }
+  ],
+  'Ethical & Lifestyle Diets': [
+    { name: 'Lacto-Ovo Vegetarian', icon: '🥗' },
+    { name: 'Strict Vegan', icon: '🌿' },
+    { name: 'Pescatarian', icon: '🐟' },
+    { name: 'Ketogenic Diet', icon: '🥑' },
+    { name: 'Paleo Diet', icon: '🦴' }
+  ],
+  'Kidney & Liver Conditions': [
+    { name: 'Chronic Kidney Disease', icon: '🫘' },
+    { name: 'Kidney Stones', icon: '🪨' },
+    { name: 'Liver Disease', icon: '🩺' }
+  ],
+  'Bone & Joint Conditions': [
+    { name: 'Osteoporosis', icon: '🦴' },
+    { name: 'Gout', icon: '🩺' }
+  ]
+};
+
 const MyProfile = () => {
   const { backendUrl } = useContext(AppContext);
 
@@ -19,6 +80,9 @@ const MyProfile = () => {
     fitnessGoals: ''
   });
   const [editDataLoading, setEditDataLoading] = useState(false);
+
+  // State for dropdown
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Function to fetch profile data
   const fetchProfile = async () => {
@@ -50,7 +114,7 @@ const MyProfile = () => {
   // Handle adding a new dietary restriction
   const handleAddRestriction = async () => {
     if (newRestriction.trim() === '') {
-      toast.warning('Please provide a dietary restriction.');
+      toast.warning('Please select a dietary restriction.');
       return;
     }
 
@@ -147,6 +211,42 @@ const MyProfile = () => {
     }
   };
 
+  // Render method for dietary restrictions dropdown
+  const renderDietaryRestrictionsDropdown = () => {
+    return (
+      <div className="relative">
+        <button 
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className="w-full px-4 py-2 text-left border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+          {newRestriction || 'Select Dietary Restriction'}
+        </button>
+        {isDropdownOpen && (
+          <div className="absolute z-10 w-full max-h-96 overflow-y-auto bg-white border border-gray-300 rounded-lg shadow-lg">
+            {Object.entries(DIETARY_RESTRICTIONS).map(([category, restrictions]) => (
+              <div key={category} className="p-2">
+                <h3 className="font-bold text-primary mb-2 border-b">{category}</h3>
+                {restrictions.map((restriction) => (
+                  <div 
+                    key={restriction.name} 
+                    onClick={() => {
+                      setNewRestriction(restriction.name);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="flex items-center p-2 hover:bg-gray-100 cursor-pointer rounded"
+                  >
+                    <span className="mr-2">{restriction.icon}</span>
+                    <span>{restriction.name}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -239,22 +339,14 @@ const MyProfile = () => {
           {/* Add Dietary Restriction Section */}
           <div className="mt-8">
             <h2 className="text-2xl font-semibold mb-4 text-primary">Add Dietary Restriction</h2>
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <input
-                type="text"
-                value={newRestriction}
-                onChange={(e) => setNewRestriction(e.target.value)}
-                placeholder="Enter Dietary Restriction"
-                className="w-full sm:w-4/5 px-4 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <button
-                onClick={handleAddRestriction}
-                disabled={addLoading}
-                className="px-4 py-1 bg-primary hover:bg-primaryhover text-white rounded-lg transition-all duration-300 disabled:opacity-50"
-              >
-                {addLoading ? 'Adding...' : 'Add'}
-              </button>
-            </div>
+            {renderDietaryRestrictionsDropdown()}
+            <button
+              onClick={handleAddRestriction}
+              disabled={addLoading || !newRestriction}
+              className="w-full mt-4 px-4 py-2 bg-primary hover:bg-primaryhover text-white rounded-lg transition-all duration-300 disabled:opacity-50"
+            >
+              {addLoading ? 'Adding...' : 'Add Dietary Restriction'}
+            </button>
           </div>
         </div>
       </div>

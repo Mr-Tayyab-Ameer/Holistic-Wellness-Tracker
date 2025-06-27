@@ -3,6 +3,66 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import validator from "validator";
 
+// Comprehensive Dietary Restrictions
+const VALID_DIETARY_RESTRICTIONS = [
+  // Metabolic & Endocrine Conditions
+  'Type 1 Diabetes (Insulin-dependent)',
+  'Type 2 Diabetes (Non-insulin dependent)',
+  'Gestational Diabetes',
+  'Prediabetes/Insulin Resistance',
+  'Hypoglycemia',
+  'Metabolic Syndrome',
+
+  // Cardiovascular Conditions
+  'Hypertension (High Blood Pressure)',
+  'Coronary Heart Disease',
+  'High Cholesterol/Hyperlipidemia',
+  'Heart Failure',
+
+  // Gastrointestinal Disorders
+  'Celiac Disease (Autoimmune gluten intolerance)',
+  'Crohn\'s Disease',
+  'Ulcerative Colitis',
+  'Irritable Bowel Syndrome (IBS)',
+  'Gastroesophageal Reflux Disease (GERD)',
+
+  // Major Food Allergies
+  'Dairy/Milk Allergy',
+  'Peanut Allergy',
+  'Tree Nut Allergy (Almonds, Walnuts, Cashews, etc.)',
+  'Shellfish Allergy (Crustaceans & Mollusks)',
+  'Egg Allergy',
+  'Fish Allergy',
+
+  // Food Intolerances
+  'Lactose Intolerance',
+  'Gluten Sensitivity (Non-celiac)',
+  'Fructose Intolerance',
+  'FODMAP Intolerance',
+
+  // Religious & Cultural Dietary Laws
+  'Halal (Islamic dietary requirements)',
+  'Kosher (Jewish dietary laws)',
+  'Hindu Vegetarian',
+  'Jain Vegetarian (Strict vegan + no root vegetables)',
+
+  // Ethical & Lifestyle Diets
+  'Lacto-Ovo Vegetarian',
+  'Strict Vegan',
+  'Pescatarian',
+  'Ketogenic Diet',
+  'Paleo Diet',
+
+  // Kidney & Liver Conditions
+  'Chronic Kidney Disease',
+  'Kidney Stones',
+  'Liver Disease',
+
+  // Bone & Joint Conditions
+  'Osteoporosis',
+  'Gout'
+];
+
 const createToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
@@ -108,15 +168,34 @@ export const restrictions = async (req, res) => {
       return res.status(400).json({ success: false, message: "Please provide dietaryRestrictions array" });
     }
 
+    // Validate each dietary restriction
+    const invalidRestrictions = dietaryRestrictions.filter(
+      restriction => !VALID_DIETARY_RESTRICTIONS.includes(restriction)
+    );
+
+    if (invalidRestrictions.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Invalid dietary restrictions: ${invalidRestrictions.join(', ')}. Please use predefined restrictions.` 
+      });
+    }
+
     const user = await userModel.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    user.healthData.dietaryRestrictions = dietaryRestrictions;
+    // Prevent duplicate restrictions
+    const uniqueRestrictions = [...new Set(dietaryRestrictions)];
+
+    user.healthData.dietaryRestrictions = uniqueRestrictions;
     await user.save();
 
-    res.status(200).json({ success: true, message: "Dietary restrictions updated successfully", userData: user });
+    res.status(200).json({ 
+      success: true, 
+      message: "Dietary restrictions updated successfully", 
+      userData: user 
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server Error" });
