@@ -14,7 +14,19 @@ const adminSchema = new mongoose.Schema({
     required: true,
     minlength: [6, 'Password must be at least 6 characters']
   },
-  role: { type: String, default: 'admin' }
+  role: { 
+    type: String, 
+    default: 'admin' 
+  },
+  // 🔐 Temporary password fields for "forgot password"
+  resetCode: {
+    type: String,
+    default: null
+  },
+  resetCodeExpiry: {
+    type: Date,
+    default: null
+  }
 });
 
 const Admin = mongoose.model('Admin', adminSchema);

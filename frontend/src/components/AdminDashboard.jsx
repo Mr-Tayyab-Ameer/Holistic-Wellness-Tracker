@@ -149,9 +149,9 @@ const AdminDashboard = () => {
         {renderTable(admins, 'admin')}
       </div>
 
-      <div>
+      <div >
         <h2 className="text-xl font-bold mb-2">Users</h2>
-        <input
+       <input
           type="text"
           placeholder="Search Users..."
           value={searchUser}

@@ -1,3 +1,4 @@
+// ✅ adminAuthMiddleware.js
 import jwt from 'jsonwebtoken';
 
 const adminAuthMiddleware = (req, res, next) => {
@@ -9,12 +10,11 @@ const adminAuthMiddleware = (req, res, next) => {
 
     if (decoded.role !== 'admin') return res.sendStatus(403);
 
-    // ✅ Make sure `req.admin.id` is set for controller usage
-    req.admin = { id: decoded.id, role: decoded.role };
+    req.admin = { _id: decoded.id, role: decoded.role };
     next();
   } catch {
     res.status(403).json({ error: 'Invalid or expired token' });
   }
 };
 
-export default adminAuthMiddleware;
+export default adminAuthMiddleware; // ✅ this line is the key

@@ -60,11 +60,23 @@ export default function AdminLogin() {
             required
           />
         </div>
+
+        {/* 👇 Forgot Password link placed here, right below password */}
+        <div className="text-right -mt-2">
+          <button
+            type="button"
+            onClick={() => navigate('/admin/forgot-password')}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            Forgot Password?
+          </button>
+        </div>
+
         <button 
           type="submit" 
           className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primaryhover transition duration-200"
         >
-          Sign In
+          Login
         </button>
       </form>
     </div>

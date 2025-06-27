@@ -20,6 +20,9 @@ import AdminRegister from './pages/AdminRegister';
 import AdminList from './components/AdminList';
 import AdminUserTable from './components/adminUserTable';
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminForgotPassword from './pages/AdminForgotPassword';
+import AdminResetPassword from './pages/AdminResetPassword';
+
 export default function App() {
   const { isLoggedIn } = useContext(AppContext);
 
@@ -35,7 +38,8 @@ export default function App() {
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/register" element={<AdminRegister />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
-
+          <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
+          <Route path="/admin/reset-password" element={<AdminResetPassword />} />
 
           {/* ===== User Routes (based on login) ===== */}
           {isLoggedIn ? (
