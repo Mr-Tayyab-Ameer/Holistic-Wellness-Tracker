@@ -60,10 +60,18 @@ export const getUserById = async (req, res) => {
   res.json(await adminService.getUserById(req.params.id));
 };
 
+//export const updateUserById = async (req, res) => {
+  //res.json(await adminService.updateUserById(req.params.id, req.body));
+//};
 export const updateUserById = async (req, res) => {
-  res.json(await adminService.updateUserById(req.params.id, req.body));
+  try {
+    const updatedUser = await adminService.updateUserById(req.params.id, req.body);
+    res.json(updatedUser);
+  } catch (err) {
+    console.error('Update User Error:', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
 };
-
 export const deleteUserById = async (req, res) => {
   res.json(await adminService.deleteUserById(req.params.id));
 };

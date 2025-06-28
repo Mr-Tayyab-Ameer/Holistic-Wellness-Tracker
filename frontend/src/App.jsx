@@ -23,6 +23,10 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminForgotPassword from './pages/AdminForgotPassword';
 import AdminResetPassword from './pages/AdminResetPassword';
 
+// ✅ User forgot/reset components directly from `pages/`
+import UserForgotPassword from './pages/UserForgotPassword';
+import UserResetPassword from './pages/UserResetPassword';
+
 export default function App() {
   const { isLoggedIn } = useContext(AppContext);
 
@@ -40,6 +44,10 @@ export default function App() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
           <Route path="/admin/reset-password" element={<AdminResetPassword />} />
+
+          {/* ✅ User forgot/reset password pages */}
+          <Route path="/forgot-password" element={<UserForgotPassword />} />
+          <Route path="/reset-password" element={<UserResetPassword />} />
 
           {/* ===== User Routes (based on login) ===== */}
           {isLoggedIn ? (
@@ -64,6 +72,7 @@ export default function App() {
               <Route path="/stress" element={<Login />} />
             </>
           )}
+
         </Routes>
 
         {isLoggedIn && <Footer />}

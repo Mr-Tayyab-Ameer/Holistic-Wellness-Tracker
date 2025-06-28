@@ -7,8 +7,6 @@ import { toast } from 'react-toastify';
 const AdminDashboard = () => {
   const [admins, setAdmins] = useState([]);
   const [users, setUsers] = useState([]);
-  const [searchAdmin, setSearchAdmin] = useState('');
-  const [searchUser, setSearchUser] = useState('');
   const [editing, setEditing] = useState({ type: null, id: null });
   const [editData, setEditData] = useState({ name: '', email: '' });
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -16,16 +14,17 @@ const AdminDashboard = () => {
   const [ownProfile, setOwnProfile] = useState(null);
   const [ownEditMode, setOwnEditMode] = useState(false);
   const [ownEditData, setOwnEditData] = useState({ name: '', email: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const token = localStorage.getItem('adminToken');
 
   const fetchData = useCallback(async () => {
     try {
       const [adminRes, userRes, profileRes] = await Promise.all([
-        axios.get(`/api/admin/admins?search=${encodeURIComponent(searchAdmin)}`, {
+        axios.get(`/api/admin/admins`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get(`/api/admin/users?search=${encodeURIComponent(searchUser)}`, {
+        axios.get(`/api/admin/users`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
         axios.get(`/api/admin/profile`, {
@@ -39,7 +38,7 @@ const AdminDashboard = () => {
     } catch {
       toast.error('Failed to fetch data');
     }
-  }, [searchAdmin, searchUser, token]);
+  }, [token]);
 
   useEffect(() => {
     fetchData();
@@ -211,20 +210,39 @@ const AdminDashboard = () => {
       {showPasswordForm && (
         <div className="bg-white shadow p-4 rounded mb-6 max-w-md mx-auto border border-gray-300">
           <h2 className="text-lg font-semibold mb-2">Change Password</h2>
-          <input
-            type="password"
-            placeholder="Current Password"
-            value={passwordData.currentPassword}
-            onChange={e => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-            className="mb-3 w-full border px-3 py-2 rounded"
-          />
-          <input
-            type="password"
-            placeholder="New Password"
-            value={passwordData.newPassword}
-            onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-            className="mb-3 w-full border px-3 py-2 rounded"
-          />
+
+          <div className="relative mb-3">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Current Password"
+              value={passwordData.currentPassword}
+              onChange={e => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+              className="w-full border px-3 py-2 rounded pr-10"
+            />
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-black"
+            >
+              {showPassword ? '🙈' : '👁️'}
+            </span>
+          </div>
+
+          <div className="relative mb-3">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="New Password"
+              value={passwordData.newPassword}
+              onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+              className="w-full border px-3 py-2 rounded pr-10"
+            />
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-black"
+            >
+              {showPassword ? '🙈' : '👁️'}
+            </span>
+          </div>
+
           <button onClick={handlePasswordChange} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
             Update Password
           </button>
@@ -286,25 +304,11 @@ const AdminDashboard = () => {
 
       <div className="mb-6">
         <h2 className="text-xl font-bold mb-2">Admins</h2>
-        <input
-          type="text"
-          placeholder="Search Admins..."
-          value={searchAdmin}
-          onChange={e => setSearchAdmin(e.target.value)}
-          className="mb-2 border px-3 py-2 w-full rounded"
-        />
         {renderTable(admins, 'admin')}
       </div>
 
       <div>
         <h2 className="text-xl font-bold mb-2">Users</h2>
-        <input
-          type="text"
-          placeholder="Search Users..."
-          value={searchUser}
-          onChange={e => setSearchUser(e.target.value)}
-          className="mb-2 border px-3 py-2 w-full rounded"
-        />
         {renderTable(users, 'user')}
       </div>
     </div>

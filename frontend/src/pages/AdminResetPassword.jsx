@@ -2,11 +2,14 @@ import { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function AdminResetPassword() {
   const [email, setEmail] = useState('');
   const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
   const navigate = useNavigate();
 
   const handleReset = async (e) => {
@@ -46,6 +49,7 @@ export default function AdminResetPassword() {
             required
           />
         </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Temporary Password</label>
           <input 
@@ -56,17 +60,28 @@ export default function AdminResetPassword() {
             required
           />
         </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-          <input 
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            required
-            minLength={6}
-          />
+          <div className="relative">
+            <input 
+              type={showPassword ? 'text' : 'password'}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md pr-10"
+              minLength={6}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-600"
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
+          </div>
         </div>
+
         <button 
           type="submit"
           className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primaryhover transition duration-200"
