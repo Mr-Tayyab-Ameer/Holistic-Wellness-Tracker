@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Service Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Recipe Service Test</h1>
+    
+    <div class="test-section info">
+        <h3>Test Instructions</h3>
+        <p>This page tests the recipe service functionality. Open the browser console to see detailed logs.</p>
+        <p>Make sure you're logged into the app first, then run these tests.</p>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 1: Initialize Recipes</h3>
+        <button onclick="testInitialize()">Initialize Recipe Service</button>
+        <div id="init-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 2: Get All Recipes</h3>
+        <button onclick="testGetAllRecipes()">Get All Recipes</button>
+        <div id="all-recipes-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 3: Filter Recipes by Restrictions</h3>
+        <input type="text" id="restriction-input" placeholder="Enter restriction (e.g., Type 2 Diabetes)" style="width: 300px; padding: 5px;">
+        <button onclick="testFilterRecipes()">Filter Recipes</button>
+        <div id="filter-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 4: Reset Recipes</h3>
+        <button onclick="testResetRecipes()">Reset to Sample Recipes</button>
+        <div id="reset-result"></div>
+    </div>
+
+    <script type="module">
+        // Import the recipe service
+        import { recipeService } from './src/utils/recipeService.js';
+
+        window.testInitialize = async function() {
+            const resultDiv = document.getElementById('init-result');
+            try {
+                resultDiv.innerHTML = '<p>Initializing...</p>';
+                const success = await recipeService.initializeRecipes();
+                if (success) {
+                    resultDiv.innerHTML = '<p class="success">✅ Recipe service initialized successfully!</p>';
+                } else {
+                    resultDiv.innerHTML = '<p class="error">❌ Failed to initialize recipe service</p>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        };
+
+        window.testGetAllRecipes = async function() {
+            const resultDiv = document.getElementById('all-recipes-result');
+            try {
+                resultDiv.innerHTML = '<p>Loading recipes...</p>';
+                const recipes = await recipeService.getAllRecipes();
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Found ${recipes.length} recipes</p>
+                    <pre>${JSON.stringify(recipes.slice(0, 2), null, 2)}</pre>
+                    <p><em>Showing first 2 recipes...</em></p>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        };
+
+        window.testFilterRecipes = async function() {
+            const resultDiv = document.getElementById('filter-result');
+            const restriction = document.getElementById('restriction-input').value;
+            
+            if (!restriction) {
+                resultDiv.innerHTML = '<p class="error">❌ Please enter a restriction</p>';
+                return;
+            }
+
+            try {
+                resultDiv.innerHTML = '<p>Filtering recipes...</p>';
+                const recipes = await recipeService.filterRecipesByRestrictions([restriction]);
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Found ${recipes.length} recipes for "${restriction}"</p>
+                    <pre>${JSON.stringify(recipes.slice(0, 2), null, 2)}</pre>
+                    <p><em>Showing first 2 recipes...</em></p>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        };
+
+        window.testResetRecipes = async function() {
+            const resultDiv = document.getElementById('reset-result');
+            try {
+                resultDiv.innerHTML = '<p>Resetting recipes...</p>';
+                const success = await recipeService.resetToSample();
+                if (success) {
+                    resultDiv.innerHTML = '<p class="success">✅ Recipes reset successfully!</p>';
+                } else {
+                    resultDiv.innerHTML = '<p class="error">❌ Failed to reset recipes</p>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        };
+
+        // Auto-initialize when page loads
+        window.addEventListener('load', async () => {
+            console.log('Testing recipe service...');
+            try {
+                await recipeService.initializeRecipes();
+                console.log('Recipe service initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize recipe service:', error);
+            }
+        });
+    </script>
+</body>
+</html> 

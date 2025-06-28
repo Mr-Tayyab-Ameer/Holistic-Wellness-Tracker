@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI IndexedDB Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { margin: 5px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>BMI IndexedDB Service Test</h1>
+    
+    <div class="test-section">
+        <h3>Test BMI Data Operations</h3>
+        <button onclick="testSaveBMIData()">Save BMI Data</button>
+        <button onclick="testGetBMIData()">Get BMI Data</button>
+        <button onclick="testSaveDailyEntry()">Save Daily Entry</button>
+        <button onclick="testGetDailyEntries()">Get Daily Entries</button>
+        <button onclick="testClearData()">Clear All Data</button>
+        <button onclick="testGetStats()">Get Stats</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Test Results</h3>
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        // Import the BMI tracking service
+        import { bmiTrackingService } from './src/utils/bmiTrackingService.js';
+
+        window.testSaveBMIData = async function() {
+            try {
+                const bmiData = {
+                    height: 170,
+                    weight: 70,
+                    age: 25,
+                    gender: 'male',
+                    activityLevel: 'moderate',
+                    heightUnit: 'cm',
+                    weightUnit: 'kg',
+                    goalWeight: 65,
+                    goalType: 'lose'
+                };
+
+                const heightImperial = { feet: 5, inches: 7 };
+                
+                const bmiResult = {
+                    bmi: 24.2,
+                    category: 'Normal Weight',
+                    goal: 'Lose Weight',
+                    message: 'You are at a healthy weight.',
+                    dailyTarget: 2200,
+                    timeline: '10 weeks to reach 65kg',
+                    weeklyChange: -0.5,
+                    recommendedGoalWeight: 65,
+                    currentWeight: 70,
+                    goalWeight: 65
+                };
+
+                await bmiTrackingService.saveBMIData(bmiData, heightImperial, bmiResult);
+                document.getElementById('results').innerHTML = '<div class="success">✅ BMI data saved successfully!</div>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testGetBMIData = async function() {
+            try {
+                const data = await bmiTrackingService.getBMIData();
+                document.getElementById('results').innerHTML = `
+                    <div class="success">✅ BMI data retrieved successfully!</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('results').innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testSaveDailyEntry = async function() {
+            try {
+                await bmiTrackingService.updateDailyEntry('2024-01-15', 2200, 2100, 'Slightly Under');
+                await bmiTrackingService.updateDailyEntry('2024-01-16', 2200, 2300, 'Slightly Over');
+                await bmiTrackingService.updateDailyEntry('2024-01-17', 2200, 2200, 'Perfect');
+                document.getElementById('results').innerHTML = '<div class="success">✅ Daily entries saved successfully!</div>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testGetDailyEntries = async function() {
+            try {
+                const entries = await bmiTrackingService.getDailyEntries();
+                document.getElementById('results').innerHTML = `
+                    <div class="success">✅ Daily entries retrieved successfully!</div>
+                    <pre>${JSON.stringify(entries, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('results').innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testClearData = async function() {
+            try {
+                await bmiTrackingService.clearAllData();
+                document.getElementById('results').innerHTML = '<div class="success">✅ All data cleared successfully!</div>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testGetStats = async function() {
+            try {
+                const stats = await bmiTrackingService.getStats();
+                document.getElementById('results').innerHTML = `
+                    <div class="success">✅ Stats retrieved successfully!</div>
+                    <pre>${JSON.stringify(stats, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('results').innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        };
+
+        // Auto-test on page load
+        window.addEventListener('load', async () => {
+            document.getElementById('results').innerHTML = '<div>🚀 BMI IndexedDB Service loaded successfully!</div>';
+        });
+    </script>
+</body>
+</html> 
