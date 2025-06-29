@@ -14,8 +14,9 @@ const UserSchema = new mongoose.Schema({
     height: Number,
     gender: String,
     fitnessGoals: String,
-  }
+  },
+  resetCode: { type: String }, // ✅ added for password reset
+  resetCodeExpiry: { type: Date }, // ✅ added for expiration check
 }, { timestamps: true });
-
 
 export default mongoose.model('User', UserSchema);

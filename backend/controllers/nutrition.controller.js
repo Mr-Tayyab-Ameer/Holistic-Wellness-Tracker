@@ -1,5 +1,6 @@
 import nutritionModel, { BMIWeightManagement } from "../models/nutrition.model.js";
-
+import sendMail from '../utils/sendMail.js';
+import User from '../models/user.model.js';
 export const getNutritionEntries = async (req, res, next) => {
   try {
     const entries = await nutritionModel.find({ user: req.user._id })
@@ -33,7 +34,7 @@ export const addNutritionEntry = async (req, res, next) => {
   }
 };
 
-export const getNutritionSummary = async (req, res, next) => {
+export const getNutritionSummary = async (req, res, next) => { 
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -50,6 +51,19 @@ export const getNutritionSummary = async (req, res, next) => {
       acc.fats += entry.fats || 0;
       return acc;
     }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
+
+    // ✅ Send email
+    const user = await User.findById(req.user._id);
+    if (user && user.email) {
+      const subject = "Your Daily Nutrition Summary";
+      const message = `Hi ${user.name || 'there'},\n\nHere is your nutrition summary for today:\n\n` +
+        `Calories: ${summary.calories} kcal\n` +
+        `Protein: ${summary.protein} g\n` +
+        `Carbs: ${summary.carbs} g\n` +
+        `Fats: ${summary.fats} g\n\nStay consistent and healthy!`;
+
+      await sendMail({ email: user.email, subject, message });
+    }
 
     res.json(summary);
   } catch (err) {

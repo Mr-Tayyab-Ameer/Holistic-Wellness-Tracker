@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -16,8 +16,21 @@ export default function AdminRegister() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      toast.error('Please login as admin first', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      navigate('/admin/login');
+    }
+  }, [navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match', {
         position: 'top-right',
@@ -27,11 +40,20 @@ export default function AdminRegister() {
     }
 
     try {
-      await axios.post('http://localhost:5000/api/admin/register', {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-      });
+      const token = localStorage.getItem('adminToken');
+      await axios.post(
+        'http://localhost:5000/api/admin/register',
+        {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       toast.success('Admin registered successfully!', {
         position: 'top-right',
@@ -64,6 +86,7 @@ export default function AdminRegister() {
             required
           />
         </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
           <input
@@ -125,6 +148,7 @@ export default function AdminRegister() {
           Register
         </button>
       </form>
+
       <p className="mt-4 text-center text-sm text-gray-600">
         Already have an admin account?{' '}
         <Link to="/admin/login" className="text-primary hover:underline">

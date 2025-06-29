@@ -65,8 +65,9 @@ const AdminDashboard = () => {
       toast.success('Updated successfully');
       setEditing({ type: null, id: null });
       fetchData();
-    } catch {
-      toast.error('Update failed');
+    } catch(error) {
+      const message = error.response?.data?.error || 'Update failed';
+    toast.error(message);
     }
   };
 
@@ -126,8 +127,9 @@ const AdminDashboard = () => {
       toast.success('Profile updated');
       setOwnEditMode(false);
       fetchData();
-    } catch {
-      toast.error('Failed to update profile');
+    } catch(error) {
+      const message = error.response?.data?.error || 'Profile Update failed';
+    toast.error(message);
     }
   };
 

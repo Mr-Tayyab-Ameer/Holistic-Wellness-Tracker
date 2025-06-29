@@ -1,18 +1,27 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom'; // ⬅️ import this
 
 export default function AdminForgotPassword() {
   const [email, setEmail] = useState('');
+  const navigate = useNavigate(); // ⬅️ initialize it
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await axios.post('http://localhost:5000/api/admin/forgot-password', { email });
+
       toast.success('Temporary password sent to your email. It expires in 1 hour.', {
         position: "top-right",
-        autoClose: 4000,
+        autoClose: 3000,
       });
+
+      // Redirect to reset-password after 3 seconds
+      setTimeout(() => {
+        navigate('/admin/reset-password'); // ⬅️ replace with your route
+      }, 3000);
+
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to send temporary password', {
         position: "top-right",

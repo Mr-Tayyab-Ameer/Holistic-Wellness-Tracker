@@ -1,4 +1,5 @@
 import { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ Added navigation import
 import axios from "axios";
 import { AppContext } from "../context/AppContext";
 import { toast } from "react-toastify";
@@ -6,12 +7,17 @@ import { toast } from "react-toastify";
 export default function UserForgotPassword() {
   const { backendUrl } = useContext(AppContext);
   const [email, setEmail] = useState("");
+  const navigate = useNavigate(); // ✅ Initialize navigate
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await axios.post(`${backendUrl}/api/auth/forgot-password`, { email });
       toast.success("Reset code sent to your email.");
+
+      setTimeout(() => {
+        navigate("/reset-password"); // ✅ Redirect after success
+      }, 3000);
     } catch (error) {
       toast.error(error.response?.data?.message || "Something went wrong");
     }

@@ -1,5 +1,3 @@
-// src/routes/adminRoute.js
-
 import express from 'express';
 import * as adminController from '../controllers/adminController.js';
 import adminAuth from '../middelwares/adminAuthMiddleware.js';
@@ -7,25 +5,25 @@ import adminAuth from '../middelwares/adminAuthMiddleware.js';
 const router = express.Router();
 
 // 🌐 Public routes
-router.post('/register', adminController.registerAdmin);
 router.post('/login', adminController.loginAdmin);
-router.post('/forgot-password', adminController.forgotPassword);  // ✅ Fixed
-router.post('/reset-password', adminController.resetPassword);    // ✅ Fixed
+router.post('/forgot-password', adminController.forgotPassword);
+router.post('/reset-password', adminController.resetPassword);
 
-// 🔐 Protected routes
+// 🔐 Protected routes — everything below requires valid JWT
 router.use(adminAuth);
 
-// ✅ Get current admin profile
+// ✅ Admin registration (must be logged in)
+router.post('/register', adminController.registerAdmin);
+
+// ✅ Admin profile
 router.get('/profile', adminController.getCurrentAdminProfile);
 router.put('/profile', adminController.updateCurrentAdminProfile);
-
-// ✅ Admin password update (self only)
 router.put('/update-password', adminController.updateAdminPassword);
 
 // ✅ Admin Management
 router.get('/admins', adminController.getAllAdmins);
-router.delete('/admins/:id', adminController.deleteAdminById);
 router.put('/admins/:id', adminController.updateAdminById);
+router.delete('/admins/:id', adminController.deleteAdminById);
 
 // ✅ User Management
 router.get('/users', adminController.getAllUsers);

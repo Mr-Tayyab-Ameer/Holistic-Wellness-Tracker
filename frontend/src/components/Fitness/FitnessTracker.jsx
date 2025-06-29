@@ -34,13 +34,27 @@ export default function FitnessTracker() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const duration = parseInt(formData.duration);
+    const calories = parseInt(formData.calories);
+
+    if (duration > 180) {
+      toast.error('Duration cannot exceed 180 minutes.');
+      return;
+    }
+
+    if (calories > 5000) {
+      toast.error('Calories cannot exceed 5000.');
+      return;
+    }
+
     try {
       const { data } = await axios.post(
         backendUrl + '/api/fitness',
         {
           activityType: formData.type,
-          duration: parseInt(formData.duration),
-          caloriesBurned: parseInt(formData.calories),
+          duration,
+          caloriesBurned: calories,
         },
         {
           headers: { token }
@@ -98,6 +112,8 @@ export default function FitnessTracker() {
               onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="30"
+              max={180}
+              min={1}
             />
           </div>
 
@@ -109,6 +125,8 @@ export default function FitnessTracker() {
               onChange={(e) => setFormData({ ...formData, calories: e.target.value })}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="300"
+              max={5000}
+              min={1}
             />
           </div>
 
