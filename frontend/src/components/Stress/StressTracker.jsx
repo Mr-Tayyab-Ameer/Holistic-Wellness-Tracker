@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-
+import { useNavigate } from 'react-router-dom'; 
 export default function StressTracker() {
   const [stressEntries, setStressEntries] = useState([]);
   const [formData, setFormData] = useState({
@@ -84,11 +84,21 @@ export default function StressTracker() {
       ];
     }
   };
-
+const navigate = useNavigate();
   return (
     <div className="mx-auto md:mx-60">
       <h1 className="text-3xl font-bold text-primary mb-6">Stress Management</h1>
-
+<div className="flex justify-end">
+  <button
+    type="button"
+    onClick={() => setTimeout(() => {
+        navigate('/emotion'); // 
+      }, 3000)}
+    className="bg-primary text-white py-2 px-4 rounded-md hover:bg-primaryhover transition duration-200"
+  >
+    Get Recommendation from Web
+  </button>
+</div>
       {/* Form */}
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-xl font-semibold mb-4">Log Stress Level</h2>
@@ -146,9 +156,7 @@ export default function StressTracker() {
             Log Stress Entry
           </button>
           <br />
-          <br />
-          <br />
-          <a href="http://localhost:8000">GET RECOMMENDATION FROM WEB</a>
+
         </form>
       </div>
 

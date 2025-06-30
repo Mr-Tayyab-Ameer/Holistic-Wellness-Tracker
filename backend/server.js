@@ -11,8 +11,7 @@ import stressRouter from './routes/stress.route.js';
 import connectDB from './config/mongo.js';
 import dashboardRouter from './routes/dashboard.route.js';
 import adminRoutes from './routes/adminRoute.js';
-// import chatbotRouter from './routes/chatbot.route.js';
-
+import emotionRouter from './routes/emotion.route.js';
 const app = express();
 
 connectDB();
@@ -25,9 +24,7 @@ app.use('/api/fitness', fitnessRouter);
 app.use('/api/nutrition', nutritionRouter);
 app.use('/api/stress', stressRouter);
 app.use('/api/dashboard', dashboardRouter);
-
-// app.use('/api/chatbot', chatbotRouter);
-
+app.use('/api/emotion', emotionRouter);
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',

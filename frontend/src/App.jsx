@@ -22,7 +22,7 @@ import AdminUserTable from './components/adminUserTable';
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminForgotPassword from './pages/AdminForgotPassword';
 import AdminResetPassword from './pages/AdminResetPassword';
-
+import Emotion from "./pages/Emotion";
 // ✅ User forgot/reset components directly from `pages/`
 import UserForgotPassword from './pages/UserForgotPassword';
 import UserResetPassword from './pages/UserResetPassword';
@@ -60,6 +60,7 @@ export default function App() {
               <Route path="/nutrition" element={<NutritionTracker />} />
               <Route path="/stress" element={<StressTracker />} />
               <Route path="/my-profile" element={<MyProfile />} />
+              <Route path="/emotion" element={<Emotion />} />
             </>
           ) : (
             <>
