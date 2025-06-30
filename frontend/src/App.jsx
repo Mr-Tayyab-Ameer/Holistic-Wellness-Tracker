@@ -23,6 +23,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminForgotPassword from './pages/AdminForgotPassword';
 import AdminResetPassword from './pages/AdminResetPassword';
 import Emotion from "./pages/Emotion";
+import LandingPage from "./pages/Landingpage";
 // ✅ User forgot/reset components directly from `pages/`
 import UserForgotPassword from './pages/UserForgotPassword';
 import UserResetPassword from './pages/UserResetPassword';
@@ -64,7 +65,8 @@ export default function App() {
             </>
           ) : (
             <>
-              <Route path="/" element={<Login />} />
+            <Route path="/" element={<LandingPage />} />
+             
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<Login />} />

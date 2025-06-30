@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import logo from "../../assets/logo.svg";
 
 export default function Navbar() {
-
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation(); // ✅ Get current route
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -42,15 +42,14 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Links */}
-          { isLoggedIn && (
-             <div className="hidden mobileMenu:flex space-x-8 items-center">
-            <NavLink to="/dashboard" className="inline-flex items-center px-1 pt-1 border-b-4 text-medium font-medium">Dashboard</NavLink>
-            <NavLink to="/fitness" className="inline-flex items-center px-1 pt-1 border-b-4 text-medium font-medium">Fitness</NavLink>
-            <NavLink to="/nutrition" className="inline-flex items-center px-1 pt-1 border-b-4 text-medium font-medium">Nutrition</NavLink>
-            <NavLink to="/stress" className="inline-flex items-center px-1 pt-1 border-b-4 text-medium font-medium">Stress</NavLink>
-          </div>)
-            }
-         
+          {isLoggedIn && (
+            <div className="hidden mobileMenu:flex space-x-8 items-center">
+              <NavLink to="/dashboard" className="inline-flex items-center px-1 pt-1 border-b-4 text-medium font-medium">Dashboard</NavLink>
+              <NavLink to="/fitness" className="inline-flex items-center px-1 pt-1 border-b-4 text-medium font-medium">Fitness</NavLink>
+              <NavLink to="/nutrition" className="inline-flex items-center px-1 pt-1 border-b-4 text-medium font-medium">Nutrition</NavLink>
+              <NavLink to="/stress" className="inline-flex items-center px-1 pt-1 border-b-4 text-medium font-medium">Stress</NavLink>
+            </div>
+          )}
 
           {/* Desktop Auth Button */}
           <div className="hidden mobileMenu:flex items-center">
@@ -70,12 +69,14 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <Link
-                to="/login"
-                className="bg-primary text-white px-6 py-2 rounded-full font-bold text-sm hover:bg-primaryhover"
-              >
-                Login
-              </Link>
+              !["/login", "/admin", "/admin/login", "/admin/register","/admin/dashboard"].includes(location.pathname) && (
+                <Link
+                  to="/login"
+                  className="bg-primary text-white px-6 py-2 rounded-full font-bold text-sm hover:bg-primaryhover"
+                >
+                  Login
+                </Link>
+              )
             )}
           </div>
 
@@ -123,13 +124,15 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <Link
-                to="/login"
-                onClick={toggleMenu}
-                className="mt-4 bg-primary text-white text-center py-2 rounded-full font-bold"
-              >
-                Login
-              </Link>
+              !["/login", "/admin", "/admin/login", "/admin/register"].includes(location.pathname) && (
+                <Link
+                  to="/login"
+                  onClick={toggleMenu}
+                  className="mt-4 bg-primary text-white text-center py-2 rounded-full font-bold"
+                >
+                  Login
+                </Link>
+              )
             )}
           </div>
         </div>
