@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 import { AppContext } from '../context/AppContext';
 import { toast } from 'react-toastify';
+import { bmiTrackingService } from '../utils/bmiTrackingService';
 
 // Dietary Restrictions Data (unchanged)
 const DIETARY_RESTRICTIONS = {
@@ -94,6 +95,27 @@ const [showNewPassword, setShowNewPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [updatingProfile, setUpdatingProfile] = useState(false);
 
+  // Helper to display height in correct format
+  const [displayHeight, setDisplayHeight] = useState('-');
+  useEffect(() => {
+    const setHeightDisplay = async () => {
+      const bmiIndexed = await bmiTrackingService.getBMIData();
+      if (bmiIndexed && bmiIndexed.heightImperial && bmiIndexed.heightImperial.feet) {
+        const { feet, inches } = bmiIndexed.heightImperial;
+        if (feet || inches) {
+          setDisplayHeight(`${feet || 0} ft${inches ? ` ${inches} in` : ''}`);
+          return;
+        }
+      }
+      if (editData.height) {
+        setDisplayHeight(`${editData.height} cm`);
+        return;
+      }
+      setDisplayHeight('-');
+    };
+    setHeightDisplay();
+  }, [editData.height]);
+
   // Fetch profile and prefill edit form
   const fetchProfile = async () => {
     try {
@@ -105,6 +127,24 @@ const [showNewPassword, setShowNewPassword] = useState(false);
       setUser(data.userData);
       setEditName(data.userData.name);
       setEditEmail(data.userData.email);
+      // Prefill health data if available
+      if (data.userData.healthData) {
+        setEditData(prev => ({
+          ...prev,
+          ...data.userData.healthData
+        }));
+      }
+      // Try to auto-populate from BMI/Nutrition if any field is missing
+      const bmiIndexed = await bmiTrackingService.getBMIData();
+      if (bmiIndexed && bmiIndexed.bmiData) {
+        setEditData(prev => ({
+          ...prev,
+          age: prev.age || bmiIndexed.bmiData.age || '',
+          weight: prev.weight || bmiIndexed.bmiData.weight || '',
+          height: prev.height || bmiIndexed.bmiData.height || '',
+          gender: prev.gender || bmiIndexed.bmiData.gender || ''
+        }));
+      }
     } catch (err) {
       const msg = err.response?.data?.message || err.message;
       setError(msg);
@@ -249,7 +289,7 @@ const [showNewPassword, setShowNewPassword] = useState(false);
 
       {/* Profile Settings */}
       <div className="mb-8 p-4 border rounded-lg bg-gray-50">
-        <h2 className="text-xl font-semibold mb-4">Edit Profile</h2>
+        <h2 className="text-xl font-semibold mb-4">Account Settings</h2>
         <div className="space-y-4">
           <input
             type="text"
@@ -265,42 +305,39 @@ const [showNewPassword, setShowNewPassword] = useState(false);
             placeholder="Email"
             className="w-full border px-3 py-2 rounded"
           />
-<div className="relative">
-  <input
-    type={showCurrentPassword ? 'text' : 'password'}
-    value={currentPassword}
-    onChange={e => setCurrentPassword(e.target.value)}
-    placeholder="Current Password"
-    className="w-full border px-3 py-2 rounded pr-10"
-  />
-  <button
-    type="button"
-    onClick={() => setShowCurrentPassword(prev => !prev)}
-    className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-600 text-lg"
-  >
-    {showCurrentPassword ? '🙈' : '👁️'}
-  </button>
-</div>
-
-<div className="relative">
-  <input
-    type={showNewPassword ? 'text' : 'password'}
-    value={newPassword}
-    onChange={e => setNewPassword(e.target.value)}
-    placeholder="New Password (optional)"
-    className="w-full border px-3 py-2 rounded pr-10"
-    minLength={6}
-  />
-  <button
-    type="button"
-    onClick={() => setShowNewPassword(prev => !prev)}
-    className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-600 text-lg"
-  >
-    {showNewPassword ? '🙈' : '👁️'}
-  </button>
-</div>
-
-        
+          <div className="relative">
+            <input
+              type={showCurrentPassword ? 'text' : 'password'}
+              value={currentPassword}
+              onChange={e => setCurrentPassword(e.target.value)}
+              placeholder="Current Password"
+              className="w-full border px-3 py-2 rounded pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurrentPassword(prev => !prev)}
+              className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-600 text-lg"
+            >
+              {showCurrentPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
+          <div className="relative">
+            <input
+              type={showNewPassword ? 'text' : 'password'}
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              placeholder="New Password (optional)"
+              className="w-full border px-3 py-2 rounded pr-10"
+              minLength={6}
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPassword(prev => !prev)}
+              className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-600 text-lg"
+            >
+              {showNewPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
           <button
             onClick={handleProfileUpdate}
             disabled={updatingProfile}
@@ -311,49 +348,46 @@ const [showNewPassword, setShowNewPassword] = useState(false);
         </div>
       </div>
 
-      {/* Existing Display of Name, Email, Health Data */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-4">
-          {user?.name && (
-            <div className="flex justify-between">
-              <span className="font-semibold">Name:</span>
-              <span>{user.name}</span>
+      {/* Professional Profile Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-5 shadow flex flex-col gap-2">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-2xl">👤</span>
+              <span className="text-lg font-semibold">Personal Info</span>
             </div>
-          )}
-          {user?.email && (
-            <div className="flex justify-between">
-              <span className="font-semibold">Email:</span>
-              <span>{user.email}</span>
+            <div className="flex justify-between"><span className="font-medium">Name:</span><span>{user?.name || '-'}</span></div>
+            <div className="flex justify-between"><span className="font-medium">Email:</span><span>{user?.email || '-'}</span></div>
+          </div>
+          <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-5 shadow flex flex-col gap-2">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-2xl">💪</span>
+              <span className="text-lg font-semibold">Health Data</span>
             </div>
-          )}
-          {user?.yourData && (
-            <div className="mt-4">
-              <span className="font-semibold block mb-2">Your Data:</span>
-              <div className="space-y-2">
-                <div className="flex justify-between"><span>Age:</span><span>{user.yourData.age}</span></div>
-                <div className="flex justify-between"><span>Weight:</span><span>{user.yourData.weight} kg</span></div>
-                <div className="flex justify-between"><span>Height:</span><span>{user.yourData.height} cm</span></div>
-                <div className="flex justify-between"><span>Gender:</span><span>{user.yourData.gender}</span></div>
-                <div className="flex justify-between"><span>Fitness Goals:</span><span>{user.yourData.fitnessGoals}</span></div>
-              </div>
-            </div>
-          )}
+            <div className="flex justify-between"><span className="font-medium">Age:</span><span>{editData.age || '-'}</span></div>
+            <div className="flex justify-between"><span className="font-medium">Weight:</span><span>{editData.weight ? `${editData.weight} kg` : '-'}</span></div>
+            <div className="flex justify-between"><span className="font-medium">Height:</span><span>{displayHeight}</span></div>
+            <div className="flex justify-between"><span className="font-medium">Gender:</span><span>{editData.gender || '-'}</span></div>
+            {editData.fitnessGoals && <div className="flex justify-between"><span className="font-medium">Fitness Goals:</span><span>{editData.fitnessGoals}</span></div>}
+          </div>
         </div>
-
         {/* Dietary Restrictions Section */}
-        <div>
-          <span className="font-semibold">Dietary Restrictions:</span>
-          {user.healthData?.dietaryRestrictions?.length ? (
-            <ul className="mt-2 space-y-2">
+        <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-5 shadow flex flex-col gap-2">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-2xl">🥗</span>
+            <span className="text-lg font-semibold">Dietary Restrictions</span>
+          </div>
+          {user?.healthData?.dietaryRestrictions?.length ? (
+            <ul className="space-y-2">
               {user.healthData.dietaryRestrictions.map((r, i) => (
-                <li key={i} className="flex justify-between bg-gray-100 px-3 py-2 rounded-lg">
+                <li key={i} className="flex justify-between bg-white px-3 py-2 rounded-lg shadow-sm">
                   <span>{r}</span>
                   <button onClick={() => handleDeleteRestriction(r)} className="text-red-500">❌</button>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-gray-500 mt-2">No restrictions added yet.</p>
+            <p className="text-gray-500">No restrictions added yet.</p>
           )}
           <div className="mt-6">
             <h2 className="font-semibold mb-2">Add Restriction</h2>
@@ -366,55 +400,6 @@ const [showNewPassword, setShowNewPassword] = useState(false);
               {addLoading ? 'Adding...' : 'Add'}
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Edit Your Data */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-semibold mb-4 text-primary">Edit Your Data</h2>
-        <div className="flex flex-col gap-4">
-          <input
-            type="number"
-            value={editData.age}
-            onChange={e => setEditData({ ...editData, age: e.target.value })}
-            placeholder="Age"
-            className="px-4 py-2 border rounded-lg"
-          />
-          <input
-            type="number"
-            value={editData.weight}
-            onChange={e => setEditData({ ...editData, weight: e.target.value })}
-            placeholder="Weight (kg)"
-            className="px-4 py-2 border rounded-lg"
-          />
-          <input
-            type="number"
-            value={editData.height}
-            onChange={e => setEditData({ ...editData, height: e.target.value })}
-            placeholder="Height (cm)"
-            className="px-4 py-2 border rounded-lg"
-          />
-          <input
-            type="text"
-            value={editData.gender}
-            onChange={e => setEditData({ ...editData, gender: e.target.value })}
-            placeholder="Gender"
-            className="px-4 py-2 border rounded-lg"
-          />
-          <input
-            type="text"
-            value={editData.fitnessGoals}
-            onChange={e => setEditData({ ...editData, fitnessGoals: e.target.value })}
-            placeholder="Fitness Goals"
-            className="px-4 py-2 border rounded-lg"
-          />
-          <button
-            onClick={handleEditData}
-            disabled={editDataLoading}
-            className="px-6 py-2 bg-primary text-white rounded hover:bg-primaryhover disabled:opacity-50"
-          >
-            {editDataLoading ? 'Updating...' : 'Update Data'}
-          </button>
         </div>
       </div>
     </div>

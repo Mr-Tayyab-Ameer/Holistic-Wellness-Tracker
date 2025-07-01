@@ -197,19 +197,10 @@ export default function Dashboard() {
         <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition duration-300">
           <h3 className="text-lg font-semibold text-gray-800">Fitness Summary</h3>
           <p className="mt-2 text-gray-600">{dashboardData.fitnessSummary} activities this week</p>
-          <p className="text-primary mt-4 font-medium cursor-pointer">View details →</p>
         </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition duration-300">
-          <h3 className="text-lg font-semibold text-gray-800">Nutrition Summary</h3>
-          <p className="mt-2 text-gray-600">{dashboardData.nutritionSummary} avg calories/day</p>
-          <p className="text-primary mt-4 font-medium cursor-pointer">View details →</p>
-        </div>
-
         <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition duration-300">
           <h3 className="text-lg font-semibold text-gray-800">Stress Level</h3>
           <p className="mt-2 text-gray-600">Average: {dashboardData.stressSummary}/10</p>
-          <p className="text-primary mt-4 font-medium cursor-pointer">View details →</p>
         </div>
       </div>
 

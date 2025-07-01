@@ -125,8 +125,238 @@ export default function NutritionTracker() {
     initializeAndFilterRecipes();
   }, [dietaryRestrictions]);
 
-  // Calculate BMI and Weight Management Plan
+  // Enhanced Weight Management Strategy
+  const calculateWeightLossStrategy = (bmiData, weightInKg, heightInMeters) => {
+    // Comprehensive weight management calculation
+    const calculateHealthyWeightRange = () => {
+      // Advanced weight calculation considering multiple health factors
+      const calculateBaseWeight = () => {
+        // Muscle-based ideal weight calculation
+        const muscleIndexFactors = {
+          male: {
+            light: 0.8,
+            moderate: 1,
+            heavy: 1.2
+          },
+          female: {
+            light: 0.7,
+            moderate: 1,
+            heavy: 1.1
+          }
+        };
+
+        // Muscle mass potential based on age and gender
+        const ageMuscleFactors = {
+          male: {
+            young: 1.1,   // 18-30
+            middle: 1,    // 31-45
+            mature: 0.9   // 46+
+          },
+          female: {
+            young: 1.05,  // 18-30
+            middle: 1,    // 31-45
+            mature: 0.95  // 46+
+          }
+        };
+
+        // Determine age category
+        let ageCategory = 'middle';
+        if (bmiData.age < 30) ageCategory = 'young';
+        else if (bmiData.age > 45) ageCategory = 'mature';
+
+        // Base calculations using height-based formulas
+        const baseWeight = {
+          male: {
+            light: 50 + (2.3 * ((heightInMeters * 100 / 2.54) - 60)),
+            moderate: 55 + (2.3 * ((heightInMeters * 100 / 2.54) - 60)),
+            heavy: 60 + (2.3 * ((heightInMeters * 100 / 2.54) - 60))
+          },
+          female: {
+            light: 45 + (2.3 * ((heightInMeters * 100 / 2.54) - 60)),
+            moderate: 50 + (2.3 * ((heightInMeters * 100 / 2.54) - 60)),
+            heavy: 55 + (2.3 * ((heightInMeters * 100 / 2.54) - 60))
+          }
+        };
+
+        // Muscle mass potential
+        const muscleIndex = bmiData.muscleIndex || 'moderate';
+        const muscleAdjustment = muscleIndexFactors[bmiData.gender][muscleIndex];
+        const ageAdjustment = ageMuscleFactors[bmiData.gender][ageCategory];
+
+        // Activity level impact
+        const activityAdjustmentFactors = {
+          sedentary: 0.9,
+          light: 0.95,
+          moderate: 1,
+          active: 1.05,
+          veryActive: 1.1
+        };
+        const activityAdjustment = activityAdjustmentFactors[bmiData.activityLevel];
+
+        // Calculate adjusted ideal weight
+        const adjustedIdealWeight = Math.round(
+          baseWeight[bmiData.gender][muscleIndex] * 
+          muscleAdjustment * 
+          ageAdjustment * 
+          activityAdjustment
+        );
+
+        // Define healthy weight ranges with more nuanced approach
+        const minHealthyWeight = Math.round(adjustedIdealWeight * 0.9);
+        const maxHealthyWeight = Math.round(adjustedIdealWeight * 1.1);
+
+        return {
+          idealWeight: adjustedIdealWeight,
+          minHealthyWeight,
+          maxHealthyWeight
+        };
+      };
+
+      // Calculate personalized weight recommendations
+      return calculateBaseWeight();
+    };
+
+    // Calculate personalized weight recommendations
+    const weightRecommendations = calculateHealthyWeightRange();
+    
+    // Determine goal weight with more sophisticated logic
+    const goalWeight = bmiData.goalWeight 
+      ? parseFloat(bmiData.goalWeight) 
+      : weightRecommendations.idealWeight;
+
+    // Calculate weight change projection
+    const currentWeight = weightInKg;
+    const weightDifference = goalWeight - currentWeight;
+
+    // Calculate BMR using Mifflin-St Jeor Equation
+    const bmr = bmiData.gender === 'male'
+      ? (10 * weightInKg) + (6.25 * (heightInMeters * 100)) - (5 * bmiData.age) + 5
+      : (10 * weightInKg) + (6.25 * (heightInMeters * 100)) - (5 * bmiData.age) - 161;
+
+    // Activity-based maintenance calories
+    const maintenanceCalories = Math.round(
+      bmr * activityMultipliers[bmiData.activityLevel]
+    );
+
+    // Medically correct daily target calculation
+    let dailyTarget;
+    if (weightDifference > 0) { // weight gain
+      dailyTarget = Math.round(maintenanceCalories + 500);
+    } else if (weightDifference < 0) { // weight loss
+      dailyTarget = Math.round(maintenanceCalories - 500);
+    } else { // maintenance
+      dailyTarget = maintenanceCalories;
+    }
+
+    // Weight gain/loss projection
+    const weightChangeProjection = {
+      weeklyCalorieSurplus: 0,
+      expectedWeightChangePerWeek: 0,
+      timeToGoal: null
+    };
+
+    // Calculate time to goal weight
+    if (Math.abs(weightDifference) > 0) {
+      weightChangeProjection.timeToGoal = Math.ceil(
+        Math.abs(weightDifference) / Math.abs(weightChangeProjection.expectedWeightChangePerWeek)
+      );
+    }
+
+    return {
+      bmr: Math.round(bmr),
+      maintenanceCalories: maintenanceCalories,
+      dailyTarget: dailyTarget,
+      goalType: weightDifference > 0 ? 'gain' : (weightDifference < 0 ? 'lose' : 'maintain'),
+      currentWeight,
+      goalWeight,
+      weightToLose: Math.round(Math.abs(weightDifference) * 10) / 10,
+      weightDifference: Math.abs(Math.round(weightDifference * 10) / 10),
+      weeklyChange: 0,
+      timeline: weightChangeProjection.timeToGoal 
+        ? `${weightChangeProjection.timeToGoal} weeks` 
+        : 'Maintain current weight',
+      
+      // Detailed weight range guidance
+      minHealthyWeight: weightRecommendations.minHealthyWeight,
+      maxHealthyWeight: weightRecommendations.maxHealthyWeight,
+      recommendedGoalWeight: weightRecommendations.idealWeight
+    };
+  };
+
+  // Comprehensive Status Determination
+  const determineNutritionStatus = (actual, target, goalType = 'lose') => {
+    const difference = actual - target;
+    const percentageDifference = Math.abs(difference / target) * 100;
+
+    // Logging for debugging
+    console.log('Status Calculation:', {
+      actual,
+      target,
+      difference,
+      percentageDifference,
+      goalType
+    });
+
+    // Weight Loss Goal Specific Logic
+    if (goalType === 'lose') {
+      // Exact match or within 5% is Perfect
+      if (Math.abs(difference) <= (target * 0.05)) return 'Perfect';
+      
+      // Slightly over/under within 15%
+      if (percentageDifference <= 15) {
+        return difference > 0 ? 'Slightly Over' : 'Slightly Under';
+      }
+      
+      // Significant deviation
+      return difference > 0 ? 'Over' : 'Under';
+    }
+
+    // Weight Gain or Maintenance Goals
+    if (goalType === 'gain') {
+      // Exact match or within 5% is Perfect
+      if (Math.abs(difference) <= (target * 0.05)) return 'Perfect';
+      
+      // Slightly over/under within 15%
+      if (percentageDifference <= 15) {
+        return difference < 0 ? 'Slightly Under' : 'Slightly Over';
+      }
+      
+      // Significant deviation
+      return difference < 0 ? 'Under' : 'Over';
+    }
+
+    // Default maintenance logic
+    return Math.abs(difference) <= (target * 0.05) ? 'Perfect' : 'Deviation';
+  };
+
+  // Modify calculateBMI to use new weight loss strategy
   const calculateBMI = async () => {
+    try {
+      // Debug logging
+      console.log('BMI Calculation Started', {
+        bmiData,
+        heightImperial,
+        height: bmiData.height,
+        weight: bmiData.weight,
+        age: bmiData.age
+      });
+
+      // Additional input validations
+      if (bmiData.height && parseFloat(bmiData.height) <= 0) {
+        toast.error('Height must be a positive number');
+        return;
+      }
+
+      if (bmiData.weight && parseFloat(bmiData.weight) <= 0) {
+        toast.error('Weight must be a positive number');
+        return;
+      }
+
+      if (bmiData.age && (parseFloat(bmiData.age) < 1 || parseFloat(bmiData.age) > 120)) {
+        toast.error('Age must be between 1 and 120');
+        return;
+      }
+
     let heightInCm;
     let weightInKg;
     
@@ -137,7 +367,7 @@ export default function NutritionTracker() {
         return;
       }
       heightInCm = parseFloat(bmiData.height);
-      } else {
+    } else {
       // Imperial units (feet/inches)
       if (!heightImperial.feet || !heightImperial.inches || !bmiData.weight || 
           isNaN(heightImperial.feet) || isNaN(heightImperial.inches) || isNaN(bmiData.weight)) {
@@ -146,6 +376,11 @@ export default function NutritionTracker() {
       }
       // Convert feet and inches to centimeters
       heightInCm = (parseInt(heightImperial.feet) * 30.48) + (parseInt(heightImperial.inches) * 2.54);
+        console.log('Imperial Height Conversion', { 
+          feet: heightImperial.feet, 
+          inches: heightImperial.inches, 
+          heightInCm 
+        });
     }
 
     // Convert weight to kilograms based on unit
@@ -165,148 +400,122 @@ export default function NutritionTracker() {
     const heightInMeters = heightInCm / 100; // Convert cm to meters
     const bmi = (weightInKg / (heightInMeters * heightInMeters)).toFixed(1);
     
-    let category, goal, message, recommendedGoalWeight;
-    
-    // Determine category and recommended goal weight
-    if (bmi < 18.5) {
-      category = 'Underweight';
-      goal = 'Gain Weight';
-      message = 'You are underweight. Focus on healthy weight gain.';
-      // Calculate healthy weight range (BMI 18.5-24.9)
-      const minHealthyWeight = 18.5 * (heightInMeters * heightInMeters);
-      const maxHealthyWeight = 24.9 * (heightInMeters * heightInMeters);
-      recommendedGoalWeight = Math.round((minHealthyWeight + maxHealthyWeight) / 2);
-    } else if (bmi >= 18.5 && bmi < 25) {
-      category = 'Normal Weight';
-      goal = 'Maintain Weight';
-      message = 'You are at a healthy weight. Keep up the good work!';
-      recommendedGoalWeight = Math.round(weightInKg);
-    } else if (bmi >= 25 && bmi < 30) {
-      category = 'Overweight';
-      goal = 'Lose Weight';
-      message = 'You are overweight. Focus on healthy weight loss.';
-      // Target BMI of 22 (middle of healthy range)
-      recommendedGoalWeight = Math.round(22 * (heightInMeters * heightInMeters));
-    } else {
-      category = 'Obese';
-      goal = 'Lose Weight';
-      message = 'You are obese. Consult a healthcare provider for guidance.';
-      // Target BMI of 22 (middle of healthy range)
-      recommendedGoalWeight = Math.round(22 * (heightInMeters * heightInMeters));
-    }
+      console.log('BMI Calculation Details', {
+        heightInCm,
+        weightInKg,
+        heightInMeters,
+        bmi
+      });
 
-    // Calculate BMR using Mifflin-St Jeor Equation
-    let bmr;
-    if (bmiData.gender === 'male') {
-      bmr = (10 * weightInKg) + (6.25 * heightInCm) - (5 * parseFloat(bmiData.age)) + 5;
-    } else {
-      bmr = (10 * weightInKg) + (6.25 * heightInCm) - (5 * parseFloat(bmiData.age)) - 161;
-    }
+      // Use new weight loss strategy calculation
+      const weightLossStrategy = calculateWeightLossStrategy(
+        bmiData, 
+        weightInKg, 
+        heightInMeters
+      );
 
-    // Calculate maintenance calories based on activity level
-    const maintenanceCalories = Math.round(bmr * activityMultipliers[bmiData.activityLevel]);
+      // Combine with existing BMI result
+      const completeResult = {
+        bmi: parseFloat(bmi),
+        category: bmi < 18.5 ? 'Underweight' :
+                  bmi < 25 ? 'Normal Weight' :
+                  bmi < 30 ? 'Overweight' : 'Obese',
+        goal: weightLossStrategy.goalType,
+        message: weightLossStrategy.goalType === 'lose' 
+          ? 'Focus on healthy, sustainable weight loss' 
+          : 'Maintain your current health status',
+        ...weightLossStrategy
+      };
 
-    // Calculate weight change timeline
-    const currentWeight = weightInKg;
-    const goalWeight = bmiData.goalWeight ? parseFloat(bmiData.goalWeight) : recommendedGoalWeight;
-    const weightDifference = goalWeight - currentWeight;
-    
-    let timeline, weeklyChange, dailyTarget, goalType;
-    
-    if (Math.abs(weightDifference) < 1) {
-      // Maintain weight
-      timeline = 'Maintain current weight';
-      weeklyChange = 0;
-      dailyTarget = maintenanceCalories;
-      goalType = 'maintain';
-    } else if (weightDifference > 0) {
-      // Gain weight (surplus of 500 calories = ~0.5kg/week)
-      weeklyChange = 0.5;
-      const weeksToGoal = Math.ceil(weightDifference / weeklyChange);
-      timeline = `${weeksToGoal} weeks to reach ${goalWeight}kg`;
-      dailyTarget = maintenanceCalories + 500; // 500 calorie surplus
-      goalType = 'gain';
-    } else {
-      // Lose weight (deficit of 500 calories = ~0.5kg/week)
-      weeklyChange = -0.5;
-      const weeksToGoal = Math.ceil(Math.abs(weightDifference) / Math.abs(weeklyChange));
-      timeline = `${weeksToGoal} weeks to reach ${goalWeight}kg`;
-      dailyTarget = maintenanceCalories - 500; // 500 calorie deficit
-      goalType = 'lose';
-    }
+      // Ensure all required properties exist with default values
+      const safeResult = {
+        bmr: completeResult.bmr || 0,
+        maintenanceCalories: completeResult.maintenanceCalories || 0,
+        dailyTarget: completeResult.dailyTarget || 0,
+        currentWeight: completeResult.currentWeight || 0,
+        goalWeight: completeResult.goalWeight || 0,
+        weightDifference: completeResult.weightDifference || 0,
+        weeklyChange: completeResult.weeklyChange || 0,
+        timeline: completeResult.timeline || 'No timeline available',
+        ...completeResult
+      };
 
-    const result = {
-      bmi,
-      category,
-      goal,
-      message,
-      bmr: Math.round(bmr),
-      maintenanceCalories,
-      dailyTarget,
-      timeline,
-      weeklyChange,
-      recommendedGoalWeight,
-      currentWeight,
-      goalWeight,
-      weightDifference: Math.abs(goalWeight - currentWeight)
-    };
+      setBmiResult(safeResult);
+      
+      // Save to tracking service
+      await bmiTrackingService.saveBMIData(
+        bmiData, 
+        heightImperial, 
+        safeResult
+      );
 
-    setBmiResult(result);
-    
-    // Save to IndexedDB with updated bmiData including goalType
-    try {
-      const updatedBmiData = { ...bmiData, goalType: goalType };
-      await bmiTrackingService.saveBMIData(updatedBmiData, heightImperial, result);
-      setBmiData(updatedBmiData); // Update local state with goalType
-      toast.success('BMI calculated and saved!');
+      return safeResult;
     } catch (error) {
-      console.error('Error saving BMI data:', error);
-      toast.error('Failed to save BMI data');
+      console.error('BMI Calculation Error:', error);
+      toast.error('Failed to calculate BMI. Please check your inputs.');
+      
+      // Set a default/fallback result to prevent rendering errors
+      const fallbackResult = {
+        bmi: 0,
+        category: 'Unknown',
+        goal: 'maintain',
+        message: 'Unable to calculate BMI',
+        bmr: 0,
+        maintenanceCalories: 0,
+        dailyTarget: 0,
+        currentWeight: 0,
+        goalWeight: 0,
+        weightDifference: 0,
+        weeklyChange: 0,
+        timeline: 'No timeline available'
+      };
+      
+      setBmiResult(fallbackResult);
+      return fallbackResult;
     }
   };
 
-  // Add daily calorie entry
+  // Update addDailyEntry to use new status determination
   const addDailyEntry = async () => {
-    if (!dailyCalories || !bmiResult) {
-      toast.error('Please enter calories and calculate BMI first');
+    if (!bmiResult) {
+      toast.error('Please calculate BMI first');
+      return;
+    }
+
+    const actualCalories = parseInt(dailyCalories);
+    if (isNaN(actualCalories)) {
+      toast.error('Please enter a valid calorie intake');
       return;
     }
 
     const entry = {
       date: selectedDate,
       target: bmiResult.dailyTarget,
-      actual: parseInt(dailyCalories),
-      status: getStatus(parseInt(dailyCalories), bmiResult.dailyTarget)
+      actual: actualCalories,
+      status: determineNutritionStatus(
+        actualCalories, 
+        bmiResult.dailyTarget, 
+        bmiResult.goalType
+      )
     };
 
     try {
-      // Save to IndexedDB
       await bmiTrackingService.updateDailyEntry(
         selectedDate,
         bmiResult.dailyTarget,
-        parseInt(dailyCalories),
+        actualCalories,
         entry.status
       );
 
-      // Update local state
       const updatedEntries = await bmiTrackingService.getDailyEntries();
       setDailyEntries(updatedEntries);
       setDailyCalories('');
-      toast.success('Daily entry added and saved!');
+      
+      toast.success(`Entry logged: ${entry.status}`);
     } catch (error) {
       console.error('Error saving daily entry:', error);
       toast.error('Failed to save daily entry');
     }
-  };
-
-  // Get status for daily entry
-  const getStatus = (actual, target) => {
-    const difference = Math.abs(actual - target);
-    const percentage = (difference / target) * 100;
-    
-    if (percentage <= 5) return 'Perfect';
-    if (percentage <= 15) return actual > target ? 'Slightly Over' : 'Slightly Under';
-    return actual > target ? 'Over' : 'Under';
   };
 
   // Get status color
@@ -335,9 +544,19 @@ export default function NutritionTracker() {
 
   // Calculate progress bar
   const getProgressBar = (actual, target) => {
-    const percentage = Math.min((actual / target) * 100, 100);
+    // Handle edge cases
+    if (target <= 0 || actual < 0) {
+      return '░'.repeat(10); // Empty progress bar
+    }
+
+    // Prevent division by zero
+    if (target === 0) {
+      return actual > 0 ? '█'.repeat(10) : '░'.repeat(10);
+    }
+
+    const percentage = Math.min(Math.max((actual / target) * 100, 0), 100);
     const filledBars = Math.floor(percentage / 10);
-    const emptyBars = 10 - filledBars;
+    const emptyBars = Math.max(10 - filledBars, 0);
     
     return '█'.repeat(filledBars) + '░'.repeat(emptyBars);
   };
@@ -416,72 +635,37 @@ export default function NutritionTracker() {
     let underTargetDays = 0;
     let successRate = 0;
     
-    if (bmiData.goalWeight && bmiData.weight && bmiData.goalType) {
-      const currentWeight = parseFloat(bmiData.weight);
-      const goalWeight = parseFloat(bmiData.goalWeight);
-      const weightDifference = Math.abs(currentWeight - goalWeight);
+    // Retrieve total timeline from BMI calculation
+    if (bmiResult && bmiResult.timeToGoal) {
+      totalWeeks = parseInt(bmiResult.timeToGoal);
       
-      if (weightDifference > 0) {
-        // Calculate total weeks in the plan based on weekly target
-        const weeklyTarget = bmiData.goalType === 'gain' ? 0.5 : -0.5; // Default weekly target
-        totalWeeks = Math.ceil(weightDifference / Math.abs(weeklyTarget));
-        
-        // Calculate weeks completed based on total days tracked
-        const totalDaysTracked = dailyEntries.length;
-        weeksCompleted = Math.floor(totalDaysTracked / 7);
-        
-        // Calculate timeline progress percentage
-        timelineProgressPercentage = Math.min((weeksCompleted / totalWeeks) * 100, 100);
-        
-        // Calculate weeks remaining
-        weeksRemaining = Math.max(0, totalWeeks - weeksCompleted);
-        
-        // Calculate success rate based on goal type (for calorie adherence)
-        if (bmiData.goalType === 'gain') {
-          // For weight gain: success is being in calorie surplus
-          onTargetDays = recentEntries.filter(entry => entry.actual > entry.target).length;
-          overTargetDays = recentEntries.filter(entry => entry.actual > entry.target + 200).length;
-          underTargetDays = recentEntries.filter(entry => entry.actual <= entry.target).length;
-          
-          if (expectedWeightChange > 0) {
-            progressMessage = `Great progress! You're ${expectedWeightChange.toFixed(2)} kg closer to your goal weight. ${weeksRemaining} weeks remaining at this rate.`;
-          } else if (expectedWeightChange < 0) {
-            progressMessage = `This week you're moving away from your goal. You need to increase your calorie intake to reach your target weight.`;
-          } else {
-            progressMessage = `You're maintaining your weight this week. You need to eat more calories to gain weight.`;
-          }
-        } else if (bmiData.goalType === 'lose') {
-          // For weight loss: success is being in calorie deficit
-          onTargetDays = recentEntries.filter(entry => entry.actual < entry.target).length;
-          overTargetDays = recentEntries.filter(entry => entry.actual < entry.target - 200).length;
-          underTargetDays = recentEntries.filter(entry => entry.actual >= entry.target).length;
-          
-          if (expectedWeightChange < 0) {
-            progressMessage = `Great progress! You're ${Math.abs(expectedWeightChange).toFixed(2)} kg closer to your goal weight. ${weeksRemaining} weeks remaining at this rate.`;
-          } else if (expectedWeightChange > 0) {
-            progressMessage = `This week you're moving away from your goal. You need to reduce your calorie intake to reach your target weight.`;
-          } else {
-            progressMessage = `You're maintaining your weight this week. You need to eat fewer calories to lose weight.`;
-          }
-        }
-        
-        // Use timeline progress as the main success rate
-        successRate = Math.round(timelineProgressPercentage);
+      // Calculate weeks completed based on total days tracked
+      const totalDaysTracked = dailyEntries.length;
+      weeksCompleted = Math.floor(totalDaysTracked / 7);
+      
+      // Calculate timeline progress percentage
+      timelineProgressPercentage = Math.min((weeksCompleted / totalWeeks) * 100, 100);
+      
+      // Calculate weeks remaining
+      weeksRemaining = Math.max(0, totalWeeks - weeksCompleted);
+      
+      // Determine progress message based on weight loss goal
+      if (expectedWeightChange < 0) {
+        progressMessage = `Great progress! You're ${Math.abs(expectedWeightChange).toFixed(2)} kg closer to your goal weight. ${weeksRemaining} weeks remaining at this rate.`;
+      } else if (expectedWeightChange > 0) {
+        progressMessage = `This week you're moving away from your goal. You need to adjust your calorie intake to reach your target weight.`;
       } else {
-        // No weight difference, fall back to original calculation
-        onTargetDays = recentEntries.filter(entry => entry.status === 'Perfect').length;
-        overTargetDays = recentEntries.filter(entry => entry.status.includes('Over')).length;
-        underTargetDays = recentEntries.filter(entry => entry.status.includes('Under')).length;
-        successRate = Math.round((onTargetDays / totalDays) * 100);
-        progressMessage = `You're maintaining your weight this week.`;
+        progressMessage = `You're maintaining your current weight this week. Stay consistent with your plan.`;
       }
-    } else {
-      // Fallback to original calculation if no goal set
-      onTargetDays = recentEntries.filter(entry => entry.status === 'Perfect').length;
-      overTargetDays = recentEntries.filter(entry => entry.status.includes('Over')).length;
-      underTargetDays = recentEntries.filter(entry => entry.status.includes('Under')).length;
+      
+      // Calculate success rate based on calorie target adherence
+      onTargetDays = recentEntries.filter(entry => 
+        Math.abs(entry.actual - entry.target) <= (entry.target * 0.1)
+      ).length;
+      overTargetDays = recentEntries.filter(entry => entry.actual > entry.target * 1.1).length;
+      underTargetDays = recentEntries.filter(entry => entry.actual < entry.target * 0.9).length;
+      
       successRate = Math.round((onTargetDays / totalDays) * 100);
-      progressMessage = `You're maintaining your weight this week.`;
     }
 
     // Get date range for display
@@ -641,6 +825,82 @@ export default function NutritionTracker() {
     );
   };
 
+  const analyzeBMIProgress = (bmiData) => {
+    const recommendations = {
+      overweight: {
+        primaryGoals: [
+          'Gradual weight loss',
+          'Improve diet quality',
+          'Increase physical activity',
+          'Regular health check-ups'
+        ],
+        healthRisks: [
+          'Cardiovascular disease',
+          'Type 2 diabetes',
+          'Hypertension',
+          'Joint problems'
+        ],
+        trackingMetrics: [
+          'Weight',
+          'Waist circumference',
+          'Body fat percentage',
+          'Blood pressure',
+          'Cholesterol levels'
+        ]
+      }
+    };
+
+    const generatePersonalizedPlan = (bmiData) => ({
+      weightLossStrategy: {
+        method: 'Calorie deficit',
+        safeDeficit: '500 calories/day',
+        expectedWeightLoss: '0.5 kg/week'
+      },
+      fitnessRecommendations: {
+        cardio: '150 minutes/week',
+        strengthTraining: '2-3 sessions/week',
+        flexibilityExercises: 'Daily stretching'
+      },
+      nutritionGuidelines: {
+        macroBalance: {
+          protein: '20-30%',
+          carbs: '45-55%',
+          fats: '20-30%'
+        },
+        foodFocus: [
+          'Whole grains',
+          'Lean proteins',
+          'Fruits and vegetables',
+          'Limit processed foods'
+        ]
+      }
+    });
+
+    const assessBMIRisk = (bmi) => {
+      if (bmi < 18.5) return 'Underweight';
+      if (bmi >= 18.5 && bmi < 25) return 'Normal Weight';
+      if (bmi >= 25 && bmi < 30) return 'Overweight';
+      if (bmi >= 30 && bmi < 35) return 'Obese (Class I)';
+      if (bmi >= 35 && bmi < 40) return 'Obese (Class II)';
+      return 'Obese (Class III)';
+    };
+
+    const riskLevel = assessBMIRisk(bmiData.currentBMI);
+
+    return {
+      category: riskLevel,
+      recommendations: recommendations[riskLevel.toLowerCase().split(' ')[0]] || recommendations.overweight,
+      personalizedPlan: generatePersonalizedPlan(bmiData),
+      riskAssessment: {
+        currentBMI: bmiData.currentBMI,
+        riskCategory: riskLevel,
+        immediateActions: riskLevel !== 'Normal Weight' 
+          ? ['Consult healthcare professional', 'Develop comprehensive wellness plan']
+          : ['Maintain current healthy lifestyle']
+      }
+    };
+  };
+
   return (
     <div className="mx-auto md:mx-60">
       <h1 className="text-3xl font-bold text-primary mb-4">BMI Weight Management Tool</h1>
@@ -711,9 +971,13 @@ export default function NutritionTracker() {
             <input
                 type="number"
                 value={bmiData.height || ''}
-                onChange={(e) => setBmiData({...bmiData, height: e.target.value === '' ? '' : parseFloat(e.target.value)})}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value));
+                  setBmiData({...bmiData, height: value});
+                }}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="170"
+                min="0"
             />
           </div>
           ) : (
@@ -723,7 +987,7 @@ export default function NutritionTracker() {
             <input
               type="number"
                   value={heightImperial.feet}
-                  onChange={(e) => setHeightImperial({...heightImperial, feet: e.target.value})}
+              onChange={(e) => setHeightImperial({...heightImperial, feet: Math.max(0, e.target.value)})}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="5"
                   min="0"
@@ -735,7 +999,7 @@ export default function NutritionTracker() {
             <input
               type="number"
                   value={heightImperial.inches}
-                  onChange={(e) => setHeightImperial({...heightImperial, inches: e.target.value})}
+              onChange={(e) => setHeightImperial({...heightImperial, inches: Math.max(0, e.target.value)})}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="8"
                   min="0"
@@ -750,9 +1014,13 @@ export default function NutritionTracker() {
             <input
               type="number"
               value={bmiData.weight || ''}
-              onChange={(e) => setBmiData({...bmiData, weight: e.target.value === '' ? '' : parseFloat(e.target.value)})}
+              onChange={(e) => {
+                const value = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value));
+                setBmiData({...bmiData, weight: value});
+              }}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder={bmiData.weightUnit === 'kg' ? '70' : '154'}
+              min="0"
             />
           </div>
           <div>
@@ -760,9 +1028,13 @@ export default function NutritionTracker() {
             <input
               type="number"
               value={bmiData.goalWeight || ''}
-              onChange={(e) => setBmiData({...bmiData, goalWeight: e.target.value === '' ? '' : parseFloat(e.target.value)})}
+              onChange={(e) => {
+                const value = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value));
+                setBmiData({...bmiData, goalWeight: value});
+              }}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder={bmiData.weightUnit === 'kg' ? '65' : '143'}
+              min="0"
             />
             <div className="text-xs text-gray-500 mt-1">
               Leave empty to use recommended goal weight
@@ -773,9 +1045,13 @@ export default function NutritionTracker() {
             <input
               type="number"
               value={bmiData.age}
-              onChange={(e) => setBmiData({...bmiData, age: parseInt(e.target.value)})}
+              onChange={(e) => {
+                const value = e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value));
+                setBmiData({...bmiData, age: value});
+              }}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="25"
+              min="0"
             />
           </div>
           <div>
@@ -847,7 +1123,7 @@ export default function NutritionTracker() {
             </div>
             <div className="bg-purple-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-purple-800 mb-1">
-                {bmiResult.recommendedGoalWeight} kg
+                {bmiResult.goalWeight} kg
               </div>
               <div className="text-sm text-purple-600">
                 Goal Weight
@@ -857,18 +1133,18 @@ export default function NutritionTracker() {
           {/* Weight Management Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <h3 className="text-lg font-semibold mb-3">Your Plan</h3>
+              <h3 className="text-lg font-semibold mb-3">Your Weight Management Plan</h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Goal:</span>
-                  <span className="font-medium">{bmiResult.goal}</span>
+                  <span className="font-medium capitalize">{bmiResult.goalType} Weight</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Weight to {bmiResult.goal === 'Gain Weight' ? 'gain' : bmiResult.goal === 'Lose Weight' ? 'lose' : 'maintain'}:</span>
+                  <span className="text-gray-600">Weight Difference:</span>
                   <span className="font-medium">{bmiResult.weightDifference} kg</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Weekly target:</span>
+                  <span className="text-gray-600">Weekly Target:</span>
                   <span className="font-medium">{bmiResult.weeklyChange} kg/week</span>
                 </div>
                 <div className="flex justify-between">
@@ -882,32 +1158,78 @@ export default function NutritionTracker() {
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-3">Calorie Targets</h3>
+              <h3 className="text-lg font-semibold mb-3">Weight Range Guidance</h3>
               <div className="space-y-3">
                 <div className="bg-blue-50 p-3 rounded">
-                  <div className="text-sm text-blue-600">BMR (Basal Metabolic Rate)</div>
-                  <div className="text-lg font-bold text-blue-800">{bmiResult.bmr} cal/day</div>
-                  <div className="text-xs text-blue-600">Calories burned at rest</div>
-                </div>
-                <div className="bg-gray-50 p-3 rounded">
-                  <div className="text-sm text-gray-600">Maintenance Calories</div>
-                  <div className="text-xl font-bold text-gray-800">{bmiResult.maintenanceCalories} cal/day</div>
-                  <div className="text-xs text-gray-600">BMR × Activity Level</div>
+                  <div className="text-sm text-blue-600">Minimum Healthy Weight</div>
+                  <div className="text-lg font-bold text-blue-800">{bmiResult.minHealthyWeight} kg</div>
+                  <div className="text-xs text-blue-600">Based on personalized health factors</div>
                 </div>
                 <div className="bg-green-50 p-3 rounded">
-                  <div className="text-sm text-green-600">Daily Target</div>
-                  <div className="text-xl font-bold text-green-800">{bmiResult.dailyTarget} cal/day</div>
-                  <div className="text-xs text-green-600">Adjusted for weight goal</div>
+                  <div className="text-sm text-green-600">Maximum Healthy Weight</div>
+                  <div className="text-lg font-bold text-green-800">{bmiResult.maxHealthyWeight} kg</div>
+                  <div className="text-xs text-green-600">Based on personalized health factors</div>
+                </div>
+                <div className="bg-purple-50 p-3 rounded">
+                  <div className="text-sm text-purple-600">Recommended Goal Weight</div>
+                  <div className="text-lg font-bold text-purple-800">{bmiResult.recommendedGoalWeight} kg</div>
+                  <div className="text-xs text-purple-600">Tailored to your unique profile</div>
                 </div>
               </div>
             </div>
           </div>
+          {/* Medical Guidelines for Weight Management */}
           <div className="mt-4 p-3 bg-gray-50 rounded">
             <div className="text-sm text-gray-600">
-              <strong>Medical Guidelines:</strong> This plan follows evidence-based nutrition science. 
-              {bmiResult.goal === 'Gain Weight' ? ' Safe weight gain is 0.25-0.5 kg per week.' : 
-               bmiResult.goal === 'Lose Weight' ? ' Safe weight loss is 0.5-1 kg per week.' : 
-               ' Maintain your current healthy weight.'}
+              <strong>Medical Guidelines:</strong> 
+              {bmiResult.goalType === 'gain' ? (
+                <>
+                  Safe weight gain focuses on lean muscle mass and healthy body composition:
+                  <ul className="list-disc list-inside mt-2">
+                    <li>Recommended gain: 0.25-0.5 kg per week</li>
+                    <li>Prioritize nutrient-dense, protein-rich foods</li>
+                    <li>Combine with strength training for muscle development</li>
+                    <li>Avoid excessive fat accumulation</li>
+                  </ul>
+                  <div className="mt-2 font-semibold text-blue-700">
+                    Consult a nutritionist or healthcare provider for personalized guidance.
+                  </div>
+                </>
+              ) : bmiResult.goalType === 'lose' ? (
+                ' Safe weight loss is 0.5-1 kg per week through balanced diet and exercise.'
+              ) : (
+                ' Maintain your current healthy weight through balanced nutrition and regular activity.'
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Calorie Targets Section */}
+      {bmiResult && (
+        <div className="bg-gray-50 p-6 rounded-lg mb-6">
+          <h3 className="text-lg font-semibold mb-4">Calorie Management</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-blue-50 p-3 rounded">
+              <div className="text-sm text-blue-600">BMR (Basal Metabolic Rate)</div>
+              <div className="text-lg font-bold text-blue-800">
+                {bmiResult.bmr || 0} cal/day
+              </div>
+              <div className="text-xs text-blue-600">Calories burned at rest</div>
+            </div>
+            <div className="bg-green-50 p-3 rounded">
+              <div className="text-sm text-green-600">Maintenance Calories</div>
+              <div className="text-xl font-bold text-green-800">
+                {bmiResult.maintenanceCalories || 0} cal/day
+              </div>
+              <div className="text-xs text-green-600">BMR × Activity Level</div>
+            </div>
+            <div className="bg-purple-50 p-3 rounded">
+              <div className="text-sm text-purple-600">Daily Target</div>
+              <div className="text-xl font-bold text-purple-800">
+                {bmiResult.dailyTarget || 0} cal/day
+              </div>
+              <div className="text-xs text-purple-600">Adjusted for weight goal</div>
             </div>
           </div>
         </div>
@@ -1005,53 +1327,106 @@ export default function NutritionTracker() {
           ) : (
             // Complete week - show full stats
             <div>
-              <h2 className="text-xl font-semibold mb-4">Weekly Progress ({weeklyStats.weekStart} - {weeklyStats.weekEnd})</h2>
+              <h2 className="text-xl font-semibold mb-4">
+                Weight Loss Timeline Progress ({weeklyStats.weekStart} - {weeklyStats.weekEnd})
+              </h2>
 
-              {/* Success Rate and Progress Message */}
+              {/* Overall Timeline Progress */}
               <div className="bg-gray-50 p-4 rounded-lg mb-4">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-primary mb-1">
-                    {weeklyStats.totalWeeks > 0 ? `${weeklyStats.progressPercentage}%` : `${weeklyStats.successRate}%`}
+                    {weeklyStats.progressPercentage}%
                   </div>
                   <div className="text-gray-600">
-                    {weeklyStats.totalWeeks > 0 ? 
-                      `Timeline Progress (${weeklyStats.weeksCompleted}/${weeklyStats.totalWeeks} weeks)` : 
-                      'Weekly Success Rate'
-                    }
+                    Overall Timeline Progress
                   </div>
-                  {weeklyStats.progressMessage && (
-                    <div className="text-sm text-gray-700 mt-2 p-2 bg-white rounded border">
-                      {weeklyStats.progressMessage}
+                  <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
+                    <div 
+                      className="bg-green-500 h-3 rounded-full transition-all duration-300" 
+                      style={{ width: `${weeklyStats.progressPercentage}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-sm text-gray-600 mt-2">
+                    {weeklyStats.weeksCompleted} of {weeklyStats.totalWeeks} weeks completed
+                  </div>
+                </div>
+
+                {/* Detailed Timeline Information */}
+                <div className="grid grid-cols-3 gap-4 mt-4 text-center">
+                  <div>
+                    <div className="text-lg font-bold text-blue-600">
+                      {weeklyStats.weeksCompleted}
                     </div>
-                  )}
-                  {weeklyStats.totalWeeks > 0 && (
-                    <div className="mt-3">
-                      <div className="text-xs text-gray-600 mb-1">Overall plan progress:</div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
-                          style={{ width: `${weeklyStats.progressPercentage}%` }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        {weeklyStats.weeksCompleted} of {weeklyStats.totalWeeks} weeks completed ({weeklyStats.weeksRemaining} weeks remaining)
-                      </div>
+                    <div className="text-xs text-gray-600">Weeks Completed</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-green-600">
+                      {weeklyStats.weeksRemaining}
                     </div>
-                  )}
-                  {weeklyStats.progressPercentage > 0 && weeklyStats.totalWeeks === 0 && (
-                    <div className="mt-3">
-                      <div className="text-xs text-gray-600 mb-1">Progress toward goal this week:</div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-green-500 h-2 rounded-full transition-all duration-300" 
-                          style={{ width: `${weeklyStats.progressPercentage}%` }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        {weeklyStats.progressPercentage}% of weekly goal achieved
-                      </div>
+                    <div className="text-xs text-gray-600">Weeks Remaining</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-purple-600">
+                      {weeklyStats.totalWeeks}
                     </div>
-                  )}
+                    <div className="text-xs text-gray-600">Total Weeks</div>
+                  </div>
+                </div>
+
+                {/* Progress Message */}
+                {weeklyStats.progressMessage && (
+                  <div className="text-sm text-gray-700 mt-4 p-3 bg-white rounded border">
+                    {weeklyStats.progressMessage}
+                  </div>
+                )}
+              </div>
+
+              {/* Weekly Performance Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-3">Weekly Performance</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Average Calories:</span>
+                      <span className="font-medium">{weeklyStats.averageCalories} cal</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Calorie Surplus/Deficit:</span>
+                      <span className={`font-medium ${weeklyStats.weeklyCalorieSurplus > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {weeklyStats.weeklyCalorieSurplus > 0 ? '+' : ''}{weeklyStats.weeklyCalorieSurplus} cal
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Expected Weight Change:</span>
+                      <span className={`font-medium ${weeklyStats.expectedWeightChange > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {weeklyStats.expectedWeightChange} kg
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Success Rate:</span>
+                      <span className={`font-medium ${weeklyStats.successRate >= 80 ? 'text-green-600' : weeklyStats.successRate >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {weeklyStats.successRate}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-3">Weekly Tracking</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">On Target Days:</span>
+                      <span className="font-medium text-green-600">{weeklyStats.onTargetDays}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Over Target Days:</span>
+                      <span className="font-medium text-red-600">{weeklyStats.overTargetDays}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Under Target Days:</span>
+                      <span className="font-medium text-yellow-600">{weeklyStats.underTargetDays}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
